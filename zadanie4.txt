@@ -1,0 +1,127 @@
+
+
+Funkcje skrótu (hash functions):
+```
+-Przekształczają hasła na stałą długość znaków, nazywaną skrótem.
+-Dobra funkcja skrótu jest jednokierunkowa, niemożliwa do odwrócenia.
+-Popularne algorytmy to MD5, SHA-256, SHA-3.
+Funkcje składające:
+
+-Używane do spowolnienia ataków brute-force poprzez dodatkowe obliczenia.
+-Przykłady to bcrypt, scrypt, Argon2.
+
+Algorytmy szyfrowania symetrycznego:
+
+-Służą do zaszyfrowania haseł w bazie danych.
+-Klucz używany do szyfrowania i deszyfrowania jest taki sam.
+-AES to powszechnie stosowany algorytm.
+
+Sól:
+
+-Losowo generowany unikalny ciąg znaków dodawany do hasła przed funkcją skrótu.
+-Zapobiega atakom przy użyciu tęczowych tabel i wymusza obliczenia dla każdego hasła.
+
+Iteracje:
+
+-Proces wielokrotnego powtarzania funkcji skrótu.
+-Zwiększa czas przekształcania haseł, chroniąc przed atakami brute-force.
+-Algorytmy, np. bcrypt, pozwalają na konfigurowalną liczbę iteracji.
+```
+---------------------------------------------------
+**1**. Różnice między SHA256 a SHA512:
+```
+Długość hasza:
+
+SHA256 generuje hasze o długości 256 bitów (32 bajty).
+SHA512 generuje hasze o długości 512 bitów (64 bajty).
+
+Ilość rund (operacji):
+
+SHA256 wykonuje 64 rundy operacji.
+SHA512 wykonuje 80 rund operacji.
+
+Bezpieczeństwo:
+
+SHA512 jest bardziej bezpieczne niż SHA256 ze względu na dłuższą długość hasza. Dłuższy hasz zazwyczaj oznacza większe bezpieczeństwo przed atakami brute-force.
+
+Zasobożerność:
+
+Obliczenia SHA512 są bardziej zasobożerne niż SHA256 z powodu większej liczby rund operacji.
+
+Zastosowanie:
+
+SHA256 jest powszechnie stosowane do wielu zastosowań, natomiast SHA512 jest wybierane tam, gdzie wymagane jest wyższe bezpieczeństwo, nawet kosztem większych zasobów.
+```
+
+**2**. Długość klucza w algorytmach kryptograficznych wpływa na poziom bezpieczeństwa. Im dłuższy klucz, tym trudniej złamać dany algorytm. Krótkie klucze są bardziej podatne na ataki, dlatego zaleca się stosowanie dłuższych kluczy w celu utrzymania wysokiego poziomu bezpieczeństwa.
+
+**3**. Do zapisywania haseł używamy funkcji haszujących wraz z zastosowaniem soli (salt). Sól to losowy i unikalny dodatek, który jest dodawany do hasła przed zastosowaniem funkcji haszującej. Utrudnia to złamanie haseł, szczególnie atakującym korzystającym z gotowych tabel haszów (takich jak tzw. "rainbow tables").
+
+W praktyce, lepiej używać programów do zamiany haseł, takich jak bcrypt, scrypt czy Argon2. Są one stworzone specjalnie po to, aby trzymać hasła w bezpieczny sposób i mają dodatkowe zabezpieczenia, które utrudniają ataki.
+
+**4**. Możemy chcieć użyć różnych kluczy, aby na przykład zabezpieczyć komunikację i dane w różnych sytuacjach. Do tego celu najlepsze będą klucze asymetryczne, takie jak klucze publiczny i prywatny. Klucze asymetryczne umożliwiają bezpieczną wymianę informacji poprzez udostępnienie klucza publicznego, który może być używany do zaszyfrowania danych, podczas gdy klucz prywatny pozostaje poufny i służy do odszyfrowywania. To znacznie zwiększa bezpieczeństwo w porównaniu do stosowania jednego klucza symetrycznego, który musiałby być wspólny dla obu stron komunikacji. Klucze asymetryczne są również skuteczne w procesie uwierzytelniania i podpisywania cyfrowego, co dodatkowo zabezpiecza dane.
+
+**5**. Szyfrowanie danych kluczem, który można łatwo złamać, może wydawać się bezsensowne, ale istnieją sytuacje, w których jest to akceptowalne lub konieczne z różnych powodów:
+```
+Wydajność:
+
+-Słabe formy szyfrowania są czasem używane w przypadkach, gdzie priorytetem jest szybkość działania, a nie wysoki poziom bezpieczeństwa. To zwłaszcza ważne w systemach, gdzie szybki dostęp do danych jest kluczowy, a skomplikowane procesy szyfrowania mogą być uciążliwe.
+
+Tymczasowe Dane:
+
+-Słabsze szyfrowanie może być akceptowalne, gdy dane są krótkotrwałe i niezbyt istotne z punktu widzenia bezpieczeństwa. Przykłady to tymczasowe dane sesji w aplikacjach internetowych.
+```
+
+-------------------------------------------------------
+**przykład kodu do zapisu zaszyfrowanych danych w bazie**
+
+<?php
+
+$original_data = "Dane do zaszyfrowania";
+
+$key = "Klucz_do_szyfrowania";
+
+$cipher_text = openssl_encrypt($original_data, 'aes-256-cbc', $key, 0, $key);
+
+$sql = "INSERT INTO encrypted_data (data) VALUES ('$cipher_text')";
+if ($conn->query($sql) === TRUE) {
+    echo "Zaszyfrowane dane zostały dodane do bazy.";
+} else {
+    echo "Błąd: " . $sql . "<br>" . $conn->error;
+}
+?>
+
+**kod sprawdzający dane logowania z szyfrowaniem**
+
+<?php
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST["username"];
+    $entered_password = $_POST["password"];
+
+    $conn = new mysqli("localhost", "username", "password", "nazwa_bazy_danych");
+
+   
+    $sql = "SELECT data FROM encrypted_data WHERE username='$username'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $encrypted_data = $row["data"];
+
+      
+        $decrypted_data = openssl_decrypt($encrypted_data, 'aes-256-cbc', $key, 0, $key);
+
+      
+        if ($decrypted_data === $entered_password) {
+            echo "Hasło jest poprawne";
+        } else {
+            echo "Hasło jest niepoprawne";
+        }
+    } else {
+        echo "Nie znaleziono użytkownika o podanej nazwie";
+    }
+
+    $conn->close();
+}
+?>
+
